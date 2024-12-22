@@ -14,13 +14,13 @@ const defaultData = {
     showing_now: {
         name: "No Movie Playing",
         video_url: "",
-        current_time: 0 // Add playback progress tracking
+        current_time: 0 // Current playback time in seconds
     },
     up_next: {
         name: "No Movie Scheduled",
         video_url: ""
     },
-    start_time: new Date().toISOString()
+    start_time: new Date().toISOString() // Timestamp when playback started
 };
 
 // Ensure `data.json` exists
@@ -36,6 +36,12 @@ app.use(express.static(frontendDir));
 app.get("/api/get-current", (req, res) => {
     try {
         const data = JSON.parse(fs.readFileSync(dataFile));
+
+        // Calculate current playback time based on elapsed time since `start_time`
+        const elapsedTime =
+            (Date.now() - new Date(data.start_time).getTime()) / 1000; // in seconds
+        const currentTime = Math.max(0, data.showing_now.current_time + elapsedTime);
+
         res.json({
             showing_now: {
                 name: data.showing_now.name || "No Movie Playing",
@@ -46,7 +52,7 @@ app.get("/api/get-current", (req, res) => {
                 video_url: data.up_next.video_url || ""
             },
             start_time: data.start_time || new Date().toISOString(),
-            current_time: data.showing_now.current_time || 0 // Include current playback time
+            current_time: currentTime // Send the calculated playback time
         });
     } catch (error) {
         console.error("Error reading data file:", error);
@@ -68,6 +74,7 @@ app.post("/api/save-progress", (req, res) => {
         // Save progress only if the video matches the currently playing one
         if (data.showing_now.video_url === video_url) {
             data.showing_now.current_time = current_time;
+            data.start_time = new Date().toISOString(); // Update start time to current time
             fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
             res.json({ message: "Playback progress saved" });
         } else {
@@ -89,8 +96,8 @@ bot.onText(/\/play (.+) (.+)/, (msg, match) => {
 
     try {
         const data = JSON.parse(fs.readFileSync(dataFile));
-        data.showing_now = { name, video_url: videoUrl, current_time: 0 };
-        data.start_time = new Date().toISOString(); // Reset start time
+        data.showing_now = { name, video_url: videoUrl, current_time: 0 }; // Reset playback time
+        data.start_time = new Date().toISOString(); // Set the start time
         fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
 
         bot.sendMessage(msg.chat.id, `Now playing: ${name}`);
@@ -122,7 +129,7 @@ bot.on("polling_error", (error) => {
 });
 
 // Start the server
-const PORT = 3000;
+const PORT = 3005;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`Frontend available at http://localhost:${PORT}/index.html`);
