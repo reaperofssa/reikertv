@@ -81,7 +81,7 @@ app.post("/api/save-progress", (req, res) => {
 
 // Telegram bot integration
 const TelegramBot = require("node-telegram-bot-api");
-const bot = new TelegramBot("YOUR_TELEGRAM_BOT_TOKEN", { polling: true });
+const bot = new TelegramBot("7959925413:AAEu7lYqzo05fY_VEotLRe3SZXJV03IVN6Q", { polling: true });
 
 bot.onText(/\/play (.+) (.+)/, (msg, match) => {
     const name = match[1];
