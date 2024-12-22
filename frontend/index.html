@@ -40,7 +40,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            pointer-events: none; /* Disable user interaction with the video */
         }
 
         .label {
@@ -69,35 +68,12 @@
             font-size: 16px;
             margin-bottom: 5px;
         }
-
-        .fullscreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: black;
-            z-index: 1000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .fullscreen video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .hidden {
-            display: none;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="video-container" id="video-container">
-            <video id="video-player" muted></video>
+            <video id="video-player" controls></video>
         </div>
         <div class="label">R<br>TV</div>
         <div class="text-section">
@@ -110,21 +86,13 @@
         </div>
     </div>
 
-    <!-- Fullscreen container -->
-    <div class="fullscreen hidden" id="fullscreen-container">
-        <video id="fullscreen-player" muted></video>
-    </div>
-
     <script>
         // Constants and variables
         const videoPlayer = document.getElementById("video-player");
-        const fullscreenContainer = document.getElementById("fullscreen-container");
-        const fullscreenPlayer = document.getElementById("fullscreen-player");
         const showingNowText = document.getElementById("showing-now");
         const upNextText = document.getElementById("up-next");
 
-        const apiUrl = "/api/get-current"; // Replace with your backend endpoint to get JSON data
-        let currentMovieStartTime;
+        const apiUrl = "https://reikertv.onrender.com/api/get-current";
 
         // Fetch current movie details and play
         async function fetchMovieData() {
@@ -133,8 +101,8 @@
                 const data = await response.json();
 
                 // Update UI
-                showingNowText.innerText = data.showing_now.name || "No Movie";
-                upNextText.innerText = data.up_next.name || "No Movie";
+                showingNowText.innerText = data.showing_now.name || "No Movie Playing";
+                upNextText.innerText = data.up_next.name || "No Movie Scheduled";
 
                 // Set video source and current time
                 if (data.showing_now.video_url) {
@@ -145,7 +113,6 @@
                         (Date.now() - new Date(data.start_time).getTime()) / 1000;
 
                     videoPlayer.currentTime = Math.max(0, elapsedTime); // Ensure non-negative time
-                    videoPlayer.muted = true; // Ensure autoplay works
                     videoPlayer.play();
                 } else {
                     console.log("No video URL provided.");
@@ -154,23 +121,6 @@
                 console.error("Error fetching movie data:", error);
             }
         }
-
-        // Fullscreen functionality
-        window.addEventListener("orientationchange", () => {
-            if (screen.orientation.angle === 90 || screen.orientation.angle === -90) {
-                fullscreenContainer.classList.remove("hidden");
-                fullscreenPlayer.src = videoPlayer.src;
-                fullscreenPlayer.currentTime = videoPlayer.currentTime;
-                fullscreenPlayer.muted = true;
-                fullscreenPlayer.play();
-            } else {
-                fullscreenContainer.classList.add("hidden");
-                fullscreenPlayer.pause();
-            }
-        });
-
-        // Disable user interaction with video
-        videoPlayer.addEventListener("click", (e) => e.preventDefault());
 
         // Fetch movie data on load
         fetchMovieData();
