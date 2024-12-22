@@ -88,7 +88,7 @@ app.post("/api/save-progress", (req, res) => {
 
 // Telegram bot integration
 const TelegramBot = require("node-telegram-bot-api");
-const bot = new TelegramBot("7959925413:AAEu7lYqzo05fY_VEotLRe3SZXJV03IVN6Q", { polling: true });
+const bot = new TelegramBot("8007858056:AAEllrmmXxJusk_olQU56bY0LwX9oNV-NuA", { polling: true });
 
 bot.onText(/\/play (.+) (.+)/, (msg, match) => {
     const name = match[1];
@@ -129,7 +129,7 @@ bot.on("polling_error", (error) => {
 });
 
 // Start the server
-const PORT = 3005;
+const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`Frontend available at http://localhost:${PORT}/index.html`);
