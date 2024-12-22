@@ -43,7 +43,7 @@ app.get("/api/get-current", (req, res) => {
 
 // Telegram bot integration
 const TelegramBot = require("node-telegram-bot-api");
-const bot = new TelegramBot("7457208907:AAExyWaeB4im3x5tIdtr9DJo0ky8Bk2l8tY", { polling: true });
+const bot = new TelegramBot("7959925413:AAEu7lYqzo05fY_VEotLRe3SZXJV03IVN6Q", { polling: true });
 
 bot.onText(/\/play (.+) (.+)/, (msg, match) => {
     const name = match[1];
