@@ -2,6 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const bodyParser = require("body-parser");
 const path = require("path");
+const TelegramBot = require("node-telegram-bot-api");
 
 const app = express();
 app.use(bodyParser.json());
@@ -86,8 +87,26 @@ app.post("/api/save-progress", (req, res) => {
     }
 });
 
+// Prevent multiple bot instances
+if (fs.existsSync(".bot-instance-lock")) {
+    console.error("Bot instance already running. Exiting...");
+    process.exit(1);
+}
+
+// Create lock file
+fs.writeFileSync(".bot-instance-lock", process.pid.toString());
+
+// Clean up lock file on exit
+process.on("exit", () => {
+    if (fs.existsSync(".bot-instance-lock")) {
+        fs.unlinkSync(".bot-instance-lock");
+    }
+});
+
+process.on("SIGINT", () => process.exit());
+process.on("SIGTERM", () => process.exit());
+
 // Telegram bot integration
-const TelegramBot = require("node-telegram-bot-api");
 const bot = new TelegramBot("8007858056:AAEllrmmXxJusk_olQU56bY0LwX9oNV-NuA", { polling: true });
 
 bot.onText(/\/play (.+) (.+)/, (msg, match) => {
