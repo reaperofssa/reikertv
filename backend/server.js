@@ -31,13 +31,24 @@ if (!fs.existsSync(dataFile)) {
 // Serve static files from the frontend directory
 app.use(express.static(frontendDir));
 
-// Serve current movie data
+// API endpoint to get the current movie and up-next data
 app.get("/api/get-current", (req, res) => {
     try {
         const data = JSON.parse(fs.readFileSync(dataFile));
-        res.json(data);
+        res.json({
+            showing_now: {
+                name: data.showing_now.name || "No Movie Playing",
+                video_url: data.showing_now.video_url || ""
+            },
+            up_next: {
+                name: data.up_next.name || "No Movie Scheduled",
+                video_url: data.up_next.video_url || ""
+            },
+            start_time: data.start_time || new Date().toISOString()
+        });
     } catch (error) {
-        res.status(500).send("Error reading data file");
+        console.error("Error reading data file:", error);
+        res.status(500).json({ error: "Error reading data file" });
     }
 });
 
@@ -48,27 +59,37 @@ const bot = new TelegramBot("7959925413:AAEu7lYqzo05fY_VEotLRe3SZXJV03IVN6Q", { 
 bot.onText(/\/play (.+) (.+)/, (msg, match) => {
     const name = match[1];
     const videoUrl = match[2];
-    const data = JSON.parse(fs.readFileSync(dataFile));
 
-    data.showing_now = { name, video_url: videoUrl };
-    data.start_time = new Date().toISOString(); // Reset start time
-    fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+    try {
+        const data = JSON.parse(fs.readFileSync(dataFile));
+        data.showing_now = { name, video_url: videoUrl };
+        data.start_time = new Date().toISOString(); // Reset start time
+        fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
 
-    bot.sendMessage(msg.chat.id, `Now playing: ${name}`);
+        bot.sendMessage(msg.chat.id, `Now playing: ${name}`);
+    } catch (error) {
+        console.error("Error updating current movie data:", error);
+        bot.sendMessage(msg.chat.id, "Error updating current movie.");
+    }
 });
 
 bot.onText(/\/upnext (.+) (.+)/, (msg, match) => {
     const name = match[1];
     const videoUrl = match[2];
-    const data = JSON.parse(fs.readFileSync(dataFile));
 
-    data.up_next = { name, video_url: videoUrl };
-    fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+    try {
+        const data = JSON.parse(fs.readFileSync(dataFile));
+        data.up_next = { name, video_url: videoUrl };
+        fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
 
-    bot.sendMessage(msg.chat.id, `Up next: ${name}`);
+        bot.sendMessage(msg.chat.id, `Up next: ${name}`);
+    } catch (error) {
+        console.error("Error updating up-next movie data:", error);
+        bot.sendMessage(msg.chat.id, "Error updating up-next movie.");
+    }
 });
 
-// Handle errors
+// Handle bot polling errors
 bot.on("polling_error", (error) => {
     console.error("Polling error:", error);
 });
