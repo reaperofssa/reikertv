@@ -9,6 +9,25 @@ app.use(bodyParser.json());
 const dataFile = path.join(__dirname, "data.json");
 const frontendDir = path.join(__dirname, "../frontend");
 
+// Default data for `data.json`
+const defaultData = {
+    showing_now: {
+        name: "No Movie Playing",
+        video_url: ""
+    },
+    up_next: {
+        name: "No Movie Scheduled",
+        video_url: ""
+    },
+    start_time: new Date().toISOString()
+};
+
+// Ensure `data.json` exists
+if (!fs.existsSync(dataFile)) {
+    fs.writeFileSync(dataFile, JSON.stringify(defaultData, null, 2));
+    console.log("Created default data.json");
+}
+
 // Serve static files from the frontend directory
 app.use(express.static(frontendDir));
 
@@ -24,7 +43,7 @@ app.get("/api/get-current", (req, res) => {
 
 // Telegram bot integration
 const TelegramBot = require("node-telegram-bot-api");
-const bot = new TelegramBot("7457208907:AAExyWaeB4im3x5tIdtr9DJo0ky8Bk2l8tY", { polling: true });
+const bot = new TelegramBot("YOUR_TELEGRAM_BOT_TOKEN", { polling: true });
 
 bot.onText(/\/play (.+) (.+)/, (msg, match) => {
     const name = match[1];
