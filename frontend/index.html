@@ -40,6 +40,13 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            -webkit-appearance: none; /* Hide native controls for iOS */
+        }
+
+        .video-container video::-webkit-media-controls-timeline,
+        .video-container video::-webkit-media-controls-current-time-display,
+        .video-container video::-webkit-media-controls-time-remaining-display {
+            display: none !important; /* Hide the timeline and time displays */
         }
 
         .label {
@@ -73,7 +80,7 @@
 <body>
     <div class="container">
         <div class="video-container" id="video-container">
-            <video id="video-player" controls controlsList="nodownload noplaybackrate nofullscreen" disablepictureinpicture></video>
+            <video id="video-player" controls controlsList="nodownload noplaybackrate nofullscreen noremoteplayback" disablepictureinpicture></video>
         </div>
         <div class="label">R<br>TV</div>
         <div class="text-section">
@@ -92,7 +99,7 @@
         const upNextText = document.getElementById("up-next");
 
         const apiUrl = "https://reikertv.onrender.com/api/get-current";
-        const saveProgressUrl = "https://reikertv.onrender.com/api/save-progress"; // Server endpoint to save progress
+        const saveProgressUrl = "https://reikertv.onrender.com/api/save-progress";
 
         let isSwitching = false;
 
