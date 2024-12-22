@@ -30,6 +30,33 @@ if (!fs.existsSync(dataFile)) {
     console.log("Created default data.json");
 }
 
+// Prevent multiple bot instances
+const lockFilePath = path.join(__dirname, ".bot-instance-lock");
+if (fs.existsSync(lockFilePath)) {
+    const existingPid = fs.readFileSync(lockFilePath, "utf-8");
+    try {
+        process.kill(existingPid, 0); // Check if the process is still running
+        console.error("Another bot instance is already running. Exiting...");
+        process.exit(1);
+    } catch (err) {
+        console.log("Stale lock file found. Starting new instance...");
+        fs.unlinkSync(lockFilePath);
+    }
+}
+
+// Create lock file
+fs.writeFileSync(lockFilePath, process.pid.toString());
+
+// Clean up lock file on exit
+process.on("exit", () => {
+    if (fs.existsSync(lockFilePath)) {
+        fs.unlinkSync(lockFilePath);
+    }
+});
+
+process.on("SIGINT", () => process.exit());
+process.on("SIGTERM", () => process.exit());
+
 // Serve static files from the frontend directory
 app.use(express.static(frontendDir));
 
@@ -87,27 +114,8 @@ app.post("/api/save-progress", (req, res) => {
     }
 });
 
-// Prevent multiple bot instances
-if (fs.existsSync(".bot-instance-lock")) {
-    console.error("Bot instance already running. Exiting...");
-    process.exit(1);
-}
-
-// Create lock file
-fs.writeFileSync(".bot-instance-lock", process.pid.toString());
-
-// Clean up lock file on exit
-process.on("exit", () => {
-    if (fs.existsSync(".bot-instance-lock")) {
-        fs.unlinkSync(".bot-instance-lock");
-    }
-});
-
-process.on("SIGINT", () => process.exit());
-process.on("SIGTERM", () => process.exit());
-
 // Telegram bot integration
-const bot = new TelegramBot("8007858056:AAEllrmmXxJusk_olQU56bY0LwX9oNV-NuA", { polling: true });
+const bot = new TelegramBot("7860267122:AAEa-H806JRmHIGDkCWMotr6_y6fV4MxNwI", { polling: true });
 
 bot.onText(/\/play (.+) (.+)/, (msg, match) => {
     const name = match[1];
