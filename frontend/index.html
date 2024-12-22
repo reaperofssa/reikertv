@@ -73,7 +73,7 @@
 <body>
     <div class="container">
         <div class="video-container" id="video-container">
-            <video id="video-player" controls controlsList="nofullscreen nodownload noremoteplayback"></video>
+            <video id="video-player" controls controlsList="noplaybackrate nodownload noseekback noseekforward"></video>
         </div>
         <div class="label">R<br>TV</div>
         <div class="text-section">
@@ -93,8 +93,9 @@
         const upNextText = document.getElementById("up-next");
 
         const apiUrl = "https://reikertv.onrender.com/api/get-current";
+        let isSwitching = false;
 
-        // Fetch current movie details and play
+        // Function to fetch and play the current video
         async function fetchMovieData() {
             try {
                 const response = await fetch(apiUrl);
@@ -104,23 +105,48 @@
                 showingNowText.innerText = data.showing_now.name || "No Movie Playing";
                 upNextText.innerText = data.up_next.name || "No Movie Scheduled";
 
-                // Set video source and current time
-                if (data.showing_now.video_url) {
-                    videoPlayer.src = data.showing_now.video_url;
-
-                    // Calculate current playback time
-                    const elapsedTime =
-                        (Date.now() - new Date(data.start_time).getTime()) / 1000;
-
-                    videoPlayer.currentTime = Math.max(0, elapsedTime); // Ensure non-negative time
-                    videoPlayer.play();
-                } else {
-                    console.log("No video URL provided.");
+                if (!isSwitching) {
+                    // Play the current video
+                    playVideo(data.showing_now, data.start_time);
                 }
             } catch (error) {
                 console.error("Error fetching movie data:", error);
             }
         }
+
+        // Function to play a specific video
+        function playVideo(videoData, startTime) {
+            if (videoData.video_url) {
+                videoPlayer.src = videoData.video_url;
+
+                // Calculate live-like playback time
+                const elapsedTime =
+                    (Date.now() - new Date(startTime).getTime()) / 1000;
+
+                videoPlayer.currentTime = Math.max(0, elapsedTime);
+                videoPlayer.play();
+            } else {
+                console.log("No video URL provided.");
+            }
+        }
+
+        // Event listener for when the video ends
+        videoPlayer.addEventListener("ended", async () => {
+            isSwitching = true; // Prevent duplicate fetching
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                // Play the "Up Next" video
+                showingNowText.innerText = data.up_next.name || "No Movie Scheduled";
+                upNextText.innerText = "No Movie Scheduled";
+
+                playVideo(data.up_next, new Date().toISOString()); // Assume "Up Next" starts now
+            } catch (error) {
+                console.error("Error playing up-next video:", error);
+            }
+            isSwitching = false;
+        });
 
         // Fetch movie data on load
         fetchMovieData();
