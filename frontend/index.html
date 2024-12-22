@@ -75,32 +75,12 @@
         .video-container:active {
             cursor: grab;
         }
-
-        /* Custom Play Button */
-        .play-button {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2rem;
-            color: white;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: none;
-        }
-
-        .play-button.show {
-            display: block;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="video-container" id="video-container">
-            <video id="video-player" preload="metadata" disablepictureinpicture></video>
-            <div class="play-button" id="play-button">▶</div>
+            <video id="video-player" controls preload="metadata" controlsList="nodownload noplaybackrate nofullscreen noremoteplayback" disablepictureinpicture></video>
         </div>
         <div class="label">R<br>TV</div>
         <div class="text-section">
@@ -117,7 +97,6 @@
         const videoPlayer = document.getElementById("video-player");
         const showingNowText = document.getElementById("showing-now");
         const upNextText = document.getElementById("up-next");
-        const playButton = document.getElementById("play-button");
 
         const apiUrl = "https://reikertv.onrender.com/api/get-current";
         const saveProgressUrl = "https://reikertv.onrender.com/api/save-progress";
@@ -148,7 +127,6 @@
                 videoPlayer.src = videoData.video_url;
                 videoPlayer.currentTime = Math.max(0, currentTime);
                 videoPlayer.play();
-                playButton.classList.remove('show'); // Hide play button after video starts
             } else {
                 console.log("No video URL provided.");
             }
@@ -195,22 +173,11 @@
             isSwitching = false;
         });
 
-        // Toggle play/pause when the play button is clicked
-        playButton.addEventListener("click", () => {
-            if (videoPlayer.paused) {
-                videoPlayer.play();
-                playButton.classList.remove('show'); // Hide play button after video starts
-            } else {
-                videoPlayer.pause();
-                playButton.classList.add('show'); // Show play button when paused
-            }
-        });
-
         // Initialize video playback on page load
         fetchMovieData();
 
         // Refresh movie data periodically (e.g., every 30 seconds)
-        setInterval(fetchMovieData, 500000);
+        setInterval(fetchMovieData, 300000);
     </script>
 </body>
 </html>
