@@ -60,6 +60,48 @@ process.on("SIGTERM", () => process.exit());
 // Serve static files from the frontend directory
 app.use(express.static(frontendDir));
 
+// Stream video file in chunks (Range Requests)
+app.get("/stream", (req, res) => {
+    const videoPath = req.query.video_url; // URL to the video file
+    if (!videoPath || !fs.existsSync(videoPath)) {
+        return res.status(404).send("Video not found");
+    }
+
+    const stat = fs.statSync(videoPath);
+    const fileSize = stat.size;
+    const range = req.headers.range;
+
+    if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+        if (start >= fileSize) {
+            res.status(416).send("Requested range not satisfiable\n" + start + " >= " + fileSize);
+            return;
+        }
+
+        const chunkSize = end - start + 1;
+        const file = fs.createReadStream(videoPath, { start, end });
+        const head = {
+            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+            "Accept-Ranges": "bytes",
+            "Content-Length": chunkSize,
+            "Content-Type": "video/mp4"
+        };
+
+        res.writeHead(206, head);
+        file.pipe(res);
+    } else {
+        const head = {
+            "Content-Length": fileSize,
+            "Content-Type": "video/mp4"
+        };
+        res.writeHead(200, head);
+        fs.createReadStream(videoPath).pipe(res);
+    }
+});
+
 // API endpoint to get the current movie and up-next data
 app.get("/api/get-current", (req, res) => {
     try {
