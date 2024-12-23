@@ -18,7 +18,7 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            overflow: auto; /* Allow scrolling */
+            overflow: auto;
         }
 
         .container {
@@ -26,7 +26,6 @@
             max-width: 600px;
             text-align: center;
             color: white;
-            position: relative;
         }
 
         .video-container {
@@ -34,14 +33,12 @@
             width: 100%;
             height: 300px;
             background-color: black;
-            overflow: hidden; /* Ensure zoom works correctly */
         }
 
         .video-container video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            -webkit-appearance: none; /* Hide native controls for iOS */
         }
 
         .label {
@@ -70,17 +67,14 @@
             font-size: 16px;
             margin-bottom: 5px;
         }
-
-        /* Zoom and scroll support */
-        .video-container:active {
-            cursor: grab;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="video-container" id="video-container">
-            <video id="video-player" controls preload="metadata" controlsList="nodownload noplaybackrate nofullscreen noremoteplayback" disablepictureinpicture></video>
+        <div class="video-container">
+            <video id="video-player" controls preload="metadata" 
+                   controlsList="nodownload noplaybackrate nofullscreen noremoteplayback" 
+                   disablepictureinpicture></video>
         </div>
         <div class="label">R<br>TV</div>
         <div class="text-section">
@@ -103,36 +97,32 @@
 
         let isSwitching = false;
 
-        // Fetch movie data and update UI
         async function fetchMovieData() {
             try {
                 const response = await fetch(apiUrl);
                 const data = await response.json();
 
-                // Update UI with current and up-next movie details
+                // Update UI
                 showingNowText.innerText = data.showing_now.name || "No Movie Playing";
                 upNextText.innerText = data.up_next.name || "No Movie Scheduled";
 
-                if (!isSwitching) {
-                    playVideo(data.showing_now, data.current_time);
+                // Load video if not switching
+                if (!isSwitching && data.showing_now.video_url) {
+                    playVideo(data.showing_now.video_url, data.current_time);
                 }
             } catch (error) {
                 console.error("Error fetching movie data:", error);
             }
         }
 
-        // Play video from the calculated current time
-        function playVideo(videoData, currentTime) {
-            if (videoData.video_url) {
-                videoPlayer.src = videoData.video_url;
-                videoPlayer.currentTime = Math.max(0, currentTime);
-                videoPlayer.play();
-            } else {
-                console.log("No video URL provided.");
+        function playVideo(url, startTime) {
+            if (videoPlayer.src !== url) {
+                videoPlayer.src = url;
             }
+            videoPlayer.currentTime = startTime;
+            videoPlayer.play();
         }
 
-        // Save playback progress periodically
         async function savePlaybackProgress() {
             try {
                 const progress = {
@@ -141,9 +131,7 @@
                 };
                 await fetch(saveProgressUrl, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(progress)
                 });
             } catch (error) {
@@ -151,12 +139,8 @@
             }
         }
 
-        // Save playback progress when time updates
-        videoPlayer.addEventListener("timeupdate", () => {
-            savePlaybackProgress();
-        });
+        videoPlayer.addEventListener("timeupdate", savePlaybackProgress);
 
-        // Play the "Up Next" video when the current one ends
         videoPlayer.addEventListener("ended", async () => {
             isSwitching = true;
             try {
@@ -166,18 +150,16 @@
                 showingNowText.innerText = data.up_next.name || "No Movie Scheduled";
                 upNextText.innerText = "No Movie Scheduled";
 
-                playVideo(data.up_next, 0);
+                playVideo(data.up_next.video_url, 0);
             } catch (error) {
                 console.error("Error playing up-next video:", error);
             }
             isSwitching = false;
         });
 
-        // Initialize video playback on page load
+        // Fetch initial data and start updates
         fetchMovieData();
-
-        // Refresh movie data periodically (e.g., every 30 seconds)
-        setInterval(fetchMovieData, 300000);
+        setInterval(fetchMovieData, 30000);
     </script>
 </body>
 </html>
