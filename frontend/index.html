@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV Site</title>
+    <title>REIKER TV</title>
     <style>
         @font-face {
             font-family: 'Gagalin';
@@ -100,6 +100,8 @@
         async function fetchMovieData() {
             try {
                 const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("Failed to fetch movie data");
+
                 const data = await response.json();
 
                 // Update UI
@@ -112,6 +114,7 @@
                 }
             } catch (error) {
                 console.error("Error fetching movie data:", error);
+                showingNowText.innerText = "Error loading video";
             }
         }
 
@@ -119,15 +122,18 @@
             if (videoPlayer.src !== url) {
                 videoPlayer.src = url;
             }
-            videoPlayer.currentTime = startTime;
-            videoPlayer.play();
+            videoPlayer.currentTime = Math.max(0, startTime || 0);
+            videoPlayer.play().catch((error) => {
+                console.error("Error playing video:", error);
+                alert("Unable to play video. Please check the link or try again later.");
+            });
         }
 
         async function savePlaybackProgress() {
             try {
                 const progress = {
                     video_url: videoPlayer.src,
-                    current_time: videoPlayer.currentTime
+                    current_time: Math.floor(videoPlayer.currentTime)
                 };
                 await fetch(saveProgressUrl, {
                     method: "POST",
@@ -145,6 +151,8 @@
             isSwitching = true;
             try {
                 const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("Failed to fetch up-next data");
+
                 const data = await response.json();
 
                 showingNowText.innerText = data.up_next.name || "No Movie Scheduled";
@@ -159,7 +167,7 @@
 
         // Fetch initial data and start updates
         fetchMovieData();
-        setInterval(fetchMovieData, 30000);
+        setInterval(fetchMovieData, 150000);
     </script>
 </body>
 </html>
