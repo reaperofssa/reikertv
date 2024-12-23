@@ -3,6 +3,7 @@ const fs = require("fs");
 const bodyParser = require("body-parser");
 const path = require("path");
 const TelegramBot = require("node-telegram-bot-api");
+const https = require("https");
 
 const app = express();
 app.use(bodyParser.json());
@@ -60,45 +61,35 @@ process.on("SIGTERM", () => process.exit());
 // Serve static files from the frontend directory
 app.use(express.static(frontendDir));
 
-// Stream video file in chunks (Range Requests)
+// Stream video from external URLs using HTTPS
 app.get("/stream", (req, res) => {
-    const videoPath = req.query.video_url; // URL to the video file
-    if (!videoPath || !fs.existsSync(videoPath)) {
-        return res.status(404).send("Video not found");
+    const videoUrl = req.query.video_url;
+
+    if (!videoUrl) {
+        return res.status(400).send("Video URL is required.");
     }
 
-    const stat = fs.statSync(videoPath);
-    const fileSize = stat.size;
-    const range = req.headers.range;
-
-    if (range) {
-        const parts = range.replace(/bytes=/, "").split("-");
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-
-        if (start >= fileSize) {
-            res.status(416).send("Requested range not satisfiable\n" + start + " >= " + fileSize);
-            return;
-        }
-
-        const chunkSize = end - start + 1;
-        const file = fs.createReadStream(videoPath, { start, end });
-        const head = {
-            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-            "Accept-Ranges": "bytes",
-            "Content-Length": chunkSize,
-            "Content-Type": "video/mp4"
-        };
-
-        res.writeHead(206, head);
-        file.pipe(res);
-    } else {
-        const head = {
-            "Content-Length": fileSize,
-            "Content-Type": "video/mp4"
-        };
-        res.writeHead(200, head);
-        fs.createReadStream(videoPath).pipe(res);
+    try {
+        https
+            .get(videoUrl, (videoRes) => {
+                if (videoRes.statusCode === 200) {
+                    res.writeHead(200, {
+                        "Content-Type": "video/mp4",
+                        "Content-Length": videoRes.headers["content-length"],
+                    });
+                    videoRes.pipe(res);
+                } else {
+                    console.error(`Error fetching video: HTTP ${videoRes.statusCode}`);
+                    res.status(videoRes.statusCode).send("Failed to fetch video.");
+                }
+            })
+            .on("error", (err) => {
+                console.error("Error fetching video:", err);
+                res.status(500).send("Error fetching video.");
+            });
+    } catch (error) {
+        console.error("Error streaming video:", error);
+        res.status(500).send("Internal server error.");
     }
 });
 
