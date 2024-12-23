@@ -106,7 +106,7 @@ app.get("/api/get-current", (req, res) => {
 });
 
 // Telegram bot integration
-const bot = new TelegramBot("YOUR_TELEGRAM_BOT_TOKEN", { polling: true });
+const bot = new TelegramBot("7860267122:AAEa-H806JRmHIGDkCWMotr6_y6fV4MxNwI", { polling: true });
 
 bot.onText(/\/play (.+) (.+)/, (msg, match) => {
     const name = match[1];
