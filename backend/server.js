@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const TelegramBot = require("node-telegram-bot-api");
 const https = require("https");
-
+const crypto = require("crypto");
 const app = express();
 app.use(bodyParser.json());
 
@@ -62,6 +62,13 @@ process.on("SIGTERM", () => process.exit());
 app.use(express.static(frontendDir));
 
 // Stream video from external URLs using HTTPS
+const videoDir = path.join(__dirname, "videos");
+
+// Ensure `videos/` directory exists
+if (!fs.existsSync(videoDir)) {
+    fs.mkdirSync(videoDir);
+}
+
 app.get("/stream", (req, res) => {
     const videoUrl = req.query.video_url;
 
@@ -69,28 +76,44 @@ app.get("/stream", (req, res) => {
         return res.status(400).send("Video URL is required.");
     }
 
-    try {
-        https
-            .get(videoUrl, (videoRes) => {
-                if (videoRes.statusCode === 200) {
-                    res.writeHead(200, {
-                        "Content-Type": "video/mp4",
-                        "Content-Length": videoRes.headers["content-length"],
-                    });
-                    videoRes.pipe(res);
-                } else {
-                    console.error(`Error fetching video: HTTP ${videoRes.statusCode}`);
-                    res.status(videoRes.statusCode).send("Failed to fetch video.");
-                }
-            })
-            .on("error", (err) => {
-                console.error("Error fetching video:", err);
-                res.status(500).send("Error fetching video.");
+    // Generate a random hex filename
+    const randomFilename = crypto.randomBytes(6).toString("hex") + ".mp4";
+    const filePath = path.join(videoDir, randomFilename);
+
+    console.log(`Downloading video: ${videoUrl}`);
+    
+    // Download video first
+    const fileStream = fs.createWriteStream(filePath);
+
+    https.get(videoUrl, (videoRes) => {
+        if (videoRes.statusCode !== 200) {
+            console.error(`Error fetching video: HTTP ${videoRes.statusCode}`);
+            return res.status(videoRes.statusCode).send("Failed to fetch video.");
+        }
+
+        videoRes.pipe(fileStream);
+
+        fileStream.on("finish", () => {
+            fileStream.close();
+            console.log(`Download complete: ${filePath}`);
+
+            // Serve the downloaded video
+            res.writeHead(200, {
+                "Content-Type": "video/mp4",
+                "Content-Disposition": `inline; filename="${randomFilename}"`,
             });
-    } catch (error) {
-        console.error("Error streaming video:", error);
-        res.status(500).send("Internal server error.");
-    }
+
+            fs.createReadStream(filePath).pipe(res);
+        });
+
+        fileStream.on("error", (err) => {
+            console.error("Error saving video file:", err);
+            res.status(500).send("Error saving video file.");
+        });
+    }).on("error", (err) => {
+        console.error("Error downloading video:", err);
+        res.status(500).send("Error downloading video.");
+    });
 });
 
 // API endpoint to get the current movie and up-next data
