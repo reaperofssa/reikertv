@@ -189,7 +189,7 @@ bot.on("polling_error", (error) => {
 });
 
 // Start the server
-const PORT = 3000;
+const PORT = 7860;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`Frontend available at http://localhost:${PORT}/index.html`);
