@@ -18,7 +18,7 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            overflow: auto; /* Allow scrolling */
+            overflow: hidden; /* Prevents scrolling */
         }
 
         .container {
@@ -39,6 +39,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            background: black;
         }
 
         .play-button {
@@ -57,6 +58,16 @@
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+
+        .full-screen-button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #ffcc00;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
         }
 
         .label {
@@ -89,12 +100,11 @@
 </head>
 <body>
     <div class="container">
-        <div class="video-container">
-            <video id="video-player" controls preload="metadata"
-                   controlsList="nodownload noplaybackrate nofullscreen noremoteplayback" 
-                   disablepictureinpicture></video>
+        <div class="video-container" id="video-container">
+            <video id="video-player" preload="metadata" playsinline></video>
             <button id="play-button" class="play-button">▶</button>
         </div>
+        <button id="full-screen-button" class="full-screen-button">Full Screen</button>
         <div class="label">R<br>TV</div>
         <div class="text-section">
             <div class="text-section-title">Showing Now</div>
@@ -109,11 +119,9 @@
     <script>
         const videoPlayer = document.getElementById("video-player");
         const playButton = document.getElementById("play-button");
-        const showingNowText = document.getElementById("showing-now");
-        const upNextText = document.getElementById("up-next");
+        const fullScreenButton = document.getElementById("full-screen-button");
 
-        const apiUrl = "/api/get-current"; // Use relative URL
-        const saveProgressUrl = "/api/save-progress";
+        const apiUrl = "/api/get-current";
 
         let isSwitching = false;
 
@@ -122,8 +130,8 @@
                 const response = await fetch(apiUrl);
                 const data = await response.json();
 
-                showingNowText.innerText = data.showing_now.name || "No Movie Playing";
-                upNextText.innerText = data.up_next.name || "No Movie Scheduled";
+                document.getElementById("showing-now").innerText = data.showing_now.name || "No Movie Playing";
+                document.getElementById("up-next").innerText = data.up_next.name || "No Movie Scheduled";
 
                 if (!isSwitching) {
                     setupVideo(data.showing_now, data.current_time);
@@ -137,7 +145,7 @@
             if (videoData.video_url) {
                 const streamUrl = `/stream?video_url=${encodeURIComponent(videoData.video_url)}`;
                 videoPlayer.src = `${streamUrl}#t=${currentTime}`;
-                playButton.style.display = "block"; // Show play button
+                playButton.style.display = "block";
             } else {
                 console.error("No video URL provided.");
                 videoPlayer.src = "";
@@ -145,52 +153,35 @@
             }
         }
 
-        async function savePlaybackProgress() {
-            try {
-                const progress = {
-                    video_url: videoPlayer.src.split("?video_url=")[1]?.split("#")[0], // Extract original URL
-                    current_time: Math.floor(videoPlayer.currentTime)
-                };
-                await fetch(saveProgressUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(progress)
-                });
-            } catch (error) {
-                console.error("Error saving playback progress:", error);
-            }
-        }
-
-        videoPlayer.addEventListener("timeupdate", savePlaybackProgress);
-
-        videoPlayer.addEventListener("ended", async () => {
-            isSwitching = true;
-            try {
-                const response = await fetch(apiUrl);
-                const data = await response.json();
-
-                showingNowText.innerText = data.up_next.name || "No Movie Scheduled";
-                upNextText.innerText = "No Movie Scheduled";
-
-                setupVideo(data.up_next, 0);
-            } catch (error) {
-                console.error("Error playing up-next video:", error);
-            }
-            isSwitching = false;
-        });
-
         playButton.addEventListener("click", () => {
             videoPlayer.play();
         });
 
         videoPlayer.addEventListener("play", () => {
-            playButton.style.display = "none"; // Hide button when playing
+            playButton.style.display = "none";
         });
 
         videoPlayer.addEventListener("pause", () => {
-            playButton.style.display = "block"; // Show button when paused
+            playButton.style.display = "block";
+        });
+
+        // Make full-screen button work on iOS Safari
+        fullScreenButton.addEventListener("click", () => {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            } else {
+                if (videoPlayer.requestFullscreen) {
+                    videoPlayer.requestFullscreen();
+                } else if (videoPlayer.webkitRequestFullscreen) {
+                    videoPlayer.webkitRequestFullscreen();
+                } else if (videoPlayer.msRequestFullscreen) {
+                    videoPlayer.msRequestFullscreen();
+                }
+            }
         });
 
         fetchMovieData();
