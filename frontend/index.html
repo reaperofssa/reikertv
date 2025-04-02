@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Reiker Live</title>
     <style>
         @font-face {
@@ -10,35 +10,42 @@
             src: url('./gagalin.otf') format('opentype');
         }
 
-        body {
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
             font-family: 'Gagalin', Arial, sans-serif;
             background-color: #0a1934;
+            color: white;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            overflow: hidden; /* Prevents scrolling */
+            overflow: hidden;
         }
 
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 800px;
             text-align: center;
-            color: white;
         }
 
         .video-container {
             position: relative;
             width: 100%;
-            height: 300px;
+            aspect-ratio: 16 / 9;
             background-color: black;
+            overflow: hidden;
+            border-radius: 10px;
         }
 
         .video-container video {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             background: black;
         }
 
@@ -60,8 +67,14 @@
             align-items: center;
         }
 
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+        }
+
         .full-screen-button {
-            margin-top: 10px;
             padding: 10px 20px;
             background-color: #ffcc00;
             border: none;
@@ -71,15 +84,11 @@
         }
 
         .label {
-            width: 80px;
-            height: 40px;
-            background-color: black;
-            color: white;
-            margin: 10px auto;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            background: black;
+            padding: 5px 10px;
+            border-radius: 5px;
         }
 
         .text-section {
@@ -94,6 +103,7 @@
 
         .text-section-title {
             font-size: 16px;
+            font-weight: bold;
             margin-bottom: 5px;
         }
     </style>
@@ -104,8 +114,10 @@
             <video id="video-player" preload="metadata" playsinline></video>
             <button id="play-button" class="play-button">▶</button>
         </div>
-        <button id="full-screen-button" class="full-screen-button">Full Screen</button>
-        <div class="label">R<br>TV</div>
+        <div class="controls">
+            <div class="label">R-TV</div>
+            <button id="full-screen-button" class="full-screen-button">Full Screen</button>
+        </div>
         <div class="text-section">
             <div class="text-section-title">Showing Now</div>
             <div id="showing-now">Loading...</div>
@@ -120,10 +132,12 @@
         const videoPlayer = document.getElementById("video-player");
         const playButton = document.getElementById("play-button");
         const fullScreenButton = document.getElementById("full-screen-button");
-
         const apiUrl = "/api/get-current";
-
         let isSwitching = false;
+
+        // Ensure inline playback on iOS Safari
+        videoPlayer.setAttribute("webkit-playsinline", "true");
+        videoPlayer.setAttribute("playsinline", "true");
 
         async function fetchMovieData() {
             try {
@@ -165,7 +179,6 @@
             playButton.style.display = "block";
         });
 
-        // Make full-screen button work on iOS Safari
         fullScreenButton.addEventListener("click", () => {
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 if (document.exitFullscreen) {
@@ -180,9 +193,25 @@
                     videoPlayer.webkitRequestFullscreen();
                 } else if (videoPlayer.msRequestFullscreen) {
                     videoPlayer.msRequestFullscreen();
+                } else if (videoPlayer.webkitEnterFullscreen) {
+                    videoPlayer.webkitEnterFullscreen();
+                } else {
+                    alert("Fullscreen is not supported on this device.");
                 }
             }
         });
+
+        // Ensure video resizes properly in landscape mode
+        function adjustVideoSize() {
+            if (window.innerHeight < window.innerWidth) {
+                document.querySelector(".video-container").style.height = "100vh";
+            } else {
+                document.querySelector(".video-container").style.height = "";
+            }
+        }
+
+        window.addEventListener("resize", adjustVideoSize);
+        window.addEventListener("orientationchange", adjustVideoSize);
 
         fetchMovieData();
         setInterval(fetchMovieData, 350000);
