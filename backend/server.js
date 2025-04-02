@@ -3,6 +3,7 @@ const fs = require("fs");
 const bodyParser = require("body-parser");
 const path = require("path");
 const TelegramBot = require("node-telegram-bot-api");
+const { exec } = require("child_process");
 const https = require("https");
 const axios = require("axios");
 
@@ -63,6 +64,12 @@ process.on("SIGTERM", () => process.exit());
 app.use(express.static(frontendDir));
 
 // Stream video from external URLs using HTTPS
+const TEMP_DIR = "temp_videos";
+
+if (!fs.existsSync(TEMP_DIR)) {
+    fs.mkdirSync(TEMP_DIR);
+}
+
 app.get("/stream", async (req, res) => {
     const videoUrl = req.query.video_url;
 
@@ -70,22 +77,56 @@ app.get("/stream", async (req, res) => {
         return res.status(400).send("Video URL is required.");
     }
 
+    const videoExt = path.extname(videoUrl).toLowerCase();
+    const tempVideoPath = path.join(TEMP_DIR, "video" + videoExt);
+    const convertedVideoPath = path.join(TEMP_DIR, "video.mp4");
+
     try {
+        // Step 1: Download the video
         const response = await axios({
             method: "get",
             url: videoUrl,
             responseType: "stream",
         });
 
-        res.writeHead(200, {
-            "Content-Type": "video/mp4",
-            "Content-Length": response.headers["content-length"],
+        const writer = fs.createWriteStream(tempVideoPath);
+        response.data.pipe(writer);
+
+        await new Promise((resolve, reject) => {
+            writer.on("finish", resolve);
+            writer.on("error", reject);
         });
 
-        response.data.pipe(res);
+        // Step 2: Convert MKV to MP4 if needed
+        if (videoExt === ".mkv") {
+            await new Promise((resolve, reject) => {
+                exec(`ffmpeg -i "${tempVideoPath}" -c:v copy -c:a aac "${convertedVideoPath}"`, (error) => {
+                    if (error) return reject(error);
+                    resolve();
+                });
+            });
+            fs.unlinkSync(tempVideoPath); // Remove original MKV file
+        } else {
+            fs.renameSync(tempVideoPath, convertedVideoPath);
+        }
+
+        // Step 3: Stream the final video
+        const stat = fs.statSync(convertedVideoPath);
+        res.writeHead(200, {
+            "Content-Type": "video/mp4",
+            "Content-Length": stat.size,
+        });
+
+        const stream = fs.createReadStream(convertedVideoPath);
+        stream.pipe(res);
+
+        stream.on("close", () => {
+            fs.unlinkSync(convertedVideoPath); // Clean up after streaming
+        });
+
     } catch (error) {
-        console.error("Error fetching video:", error.message);
-        res.status(error.response?.status || 500).send("Failed to fetch video.");
+        console.error("Error processing video:", error.message);
+        res.status(500).send("Failed to process video.");
     }
 });
 
