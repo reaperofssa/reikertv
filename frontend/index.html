@@ -25,14 +25,25 @@
             align-items: center;
             height: 100vh;
             overflow: hidden;
-            transition: all 0.3s ease-in-out;
         }
 
         .container {
             width: 100%;
             max-width: 800px;
             text-align: center;
-            transition: opacity 0.3s ease-in-out;
+            transition: all 0.3s ease;
+        }
+
+        /* Status Bar Above Video */
+        .status-bar {
+            background: linear-gradient(90deg, #ffcc00, #ff9900);
+            padding: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            color: black;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 10px;
         }
 
         .video-container {
@@ -42,7 +53,7 @@
             background-color: black;
             overflow: hidden;
             border-radius: 10px;
-            transition: all 0.3s ease-in-out;
+            transition: all 0.3s ease;
         }
 
         .video-container video {
@@ -75,6 +86,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px;
+            transition: all 0.3s ease;
         }
 
         .full-screen-button {
@@ -102,6 +114,7 @@
             text-align: left;
             font-size: 14px;
             border-radius: 8px;
+            transition: all 0.3s ease;
         }
 
         .text-section-title {
@@ -110,21 +123,42 @@
             margin-bottom: 5px;
         }
 
-        /* Fullscreen Video Styling */
-        .landscape {
-            width: 100vw;
-            height: 100vh;
-            border-radius: 0;
-        }
+        /* LANDSCAPE MODE */
+        @media screen and (max-height: 500px) and (min-aspect-ratio: 1.3) {
+            body {
+                flex-direction: column;
+                align-items: flex-start;
+                justify-content: flex-start;
+                background-color: black;
+            }
 
-        .hidden {
-            opacity: 0;
-            pointer-events: none;
+            .container {
+                width: 100%;
+                height: 100vh;
+                max-width: none;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .status-bar,
+            .controls,
+            .text-section {
+                display: none;
+            }
+
+            .video-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container" id="container">
+    <div class="container">
+        <div class="status-bar">LIVE: STREAMING NOW</div>
         <div class="video-container" id="video-container">
             <video id="video-player" preload="metadata" playsinline></video>
             <button id="play-button" class="play-button">▶</button>
@@ -147,13 +181,9 @@
         const videoPlayer = document.getElementById("video-player");
         const playButton = document.getElementById("play-button");
         const fullScreenButton = document.getElementById("full-screen-button");
-        const container = document.getElementById("container");
-        const videoContainer = document.getElementById("video-container");
-
         const apiUrl = "/api/get-current";
         let isSwitching = false;
 
-        // Ensure inline playback on iOS Safari
         videoPlayer.setAttribute("webkit-playsinline", "true");
         videoPlayer.setAttribute("playsinline", "true");
 
@@ -219,21 +249,13 @@
             }
         });
 
-        // Handle landscape mode for full video view
-        function adjustVideoForOrientation() {
-            if (window.innerHeight < window.innerWidth) {
-                // Landscape mode
-                videoContainer.classList.add("landscape");
-                container.classList.add("hidden");
+        window.addEventListener("resize", () => {
+            if (window.innerWidth > window.innerHeight) {
+                document.body.style.backgroundColor = "black";
             } else {
-                // Portrait mode
-                videoContainer.classList.remove("landscape");
-                container.classList.remove("hidden");
+                document.body.style.backgroundColor = "#0a1934";
             }
-        }
-
-        window.addEventListener("resize", adjustVideoForOrientation);
-        window.addEventListener("orientationchange", adjustVideoForOrientation);
+        });
 
         fetchMovieData();
         setInterval(fetchMovieData, 350000);
