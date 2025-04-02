@@ -5,6 +5,8 @@ const path = require("path");
 const TelegramBot = require("node-telegram-bot-api");
 const https = require("https");
 const crypto = require("crypto");
+const axios = require("axios");
+
 const app = express();
 app.use(bodyParser.json());
 
@@ -69,9 +71,49 @@ if (!fs.existsSync(videoDir)) {
     fs.mkdirSync(videoDir);
 }
 
-app.get("/stream", (req, res) => {
-    const videoUrl = req.query.video_url;
+// Function to download video with retries
+async function downloadVideo(videoUrl, filePath, attempt = 1) {
+    try {
+        console.log(`Downloading (Attempt ${attempt}): ${videoUrl}`);
 
+        const response = await axios({
+            url: videoUrl,
+            method: "GET",
+            responseType: "stream",
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                "Referer": "https://catbox.moe/", // Some sites require a referer
+            },
+            timeout: 30000, // 30 seconds timeout
+        });
+
+        const fileStream = fs.createWriteStream(filePath);
+        response.data.pipe(fileStream);
+
+        return new Promise((resolve, reject) => {
+            fileStream.on("finish", () => {
+                console.log(`Download complete: ${filePath}`);
+                resolve();
+            });
+
+            fileStream.on("error", reject);
+        });
+
+    } catch (error) {
+        console.error(`Error downloading video (Attempt ${attempt}):`, error.message);
+
+        if (attempt < 3) {
+            console.log("Retrying...");
+            return downloadVideo(videoUrl, filePath, attempt + 1);
+        }
+
+        throw new Error("Failed to download video after 3 attempts.");
+    }
+}
+
+app.get("/stream", async (req, res) => {
+    const videoUrl = req.query.video_url;
+    
     if (!videoUrl) {
         return res.status(400).send("Video URL is required.");
     }
@@ -80,40 +122,19 @@ app.get("/stream", (req, res) => {
     const randomFilename = crypto.randomBytes(6).toString("hex") + ".mp4";
     const filePath = path.join(videoDir, randomFilename);
 
-    console.log(`Downloading video: ${videoUrl}`);
-    
-    // Download video first
-    const fileStream = fs.createWriteStream(filePath);
+    try {
+        await downloadVideo(videoUrl, filePath);
 
-    https.get(videoUrl, (videoRes) => {
-        if (videoRes.statusCode !== 200) {
-            console.error(`Error fetching video: HTTP ${videoRes.statusCode}`);
-            return res.status(videoRes.statusCode).send("Failed to fetch video.");
-        }
-
-        videoRes.pipe(fileStream);
-
-        fileStream.on("finish", () => {
-            fileStream.close();
-            console.log(`Download complete: ${filePath}`);
-
-            // Serve the downloaded video
-            res.writeHead(200, {
-                "Content-Type": "video/mp4",
-                "Content-Disposition": `inline; filename="${randomFilename}"`,
-            });
-
-            fs.createReadStream(filePath).pipe(res);
+        // Serve the downloaded video
+        res.writeHead(200, {
+            "Content-Type": "video/mp4",
+            "Content-Disposition": `inline; filename="${randomFilename}"`,
         });
 
-        fileStream.on("error", (err) => {
-            console.error("Error saving video file:", err);
-            res.status(500).send("Error saving video file.");
-        });
-    }).on("error", (err) => {
-        console.error("Error downloading video:", err);
+        fs.createReadStream(filePath).pipe(res);
+    } catch (error) {
         res.status(500).send("Error downloading video.");
-    });
+    }
 });
 
 // API endpoint to get the current movie and up-next data
