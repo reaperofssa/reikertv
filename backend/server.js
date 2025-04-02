@@ -125,10 +125,12 @@ app.get("/stream", async (req, res) => {
     try {
         await downloadVideo(videoUrl, filePath);
 
-        // Serve the downloaded video
+        // Force inline streaming on iOS
         res.writeHead(200, {
             "Content-Type": "video/mp4",
-            "Content-Disposition": `inline; filename="${randomFilename}"`,
+            "Content-Disposition": "inline",  // Force inline playback
+            "Accept-Ranges": "bytes",         // Allow seeking
+            "Cache-Control": "no-store"       // Prevent caching issues
         });
 
         fs.createReadStream(filePath).pipe(res);
