@@ -89,7 +89,7 @@ app.get("/stream", async (req, res) => {
     }
 });
 
-app.listen(3000, () => console.log("Server running on port 3000"));
+app.listen(7860, () => console.log("Server running on port 3000"));
 
 // API endpoint to get the current movie and up-next data
 app.get("/api/get-current", (req, res) => {
@@ -146,7 +146,7 @@ app.post("/api/save-progress", (req, res) => {
 });
 
 // Telegram bot integration
-const bot = new TelegramBot("7860267122:AAEa-H806JRmHIGDkCWMotr6_y6fV4MxNwI", { polling: true });
+const bot = new TelegramBot("7860267122:AAHYE8PmWsisJ11UumQmSmmLh33nP5PuvU0", { polling: true });
 
 bot.onText(/\/play (.+) (.+)/, (msg, match) => {
     const name = match[1];
@@ -187,7 +187,7 @@ bot.on("polling_error", (error) => {
 });
 
 // Start the server
-const PORT = 3000;
+const PORT = 7860;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`Frontend available at http://localhost:${PORT}/index.html`);
