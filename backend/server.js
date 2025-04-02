@@ -4,8 +4,6 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const TelegramBot = require("node-telegram-bot-api");
 const https = require("https");
-const crypto = require("crypto");
-const axios = require("axios");
 
 const app = express();
 app.use(bodyParser.json());
@@ -64,80 +62,33 @@ process.on("SIGTERM", () => process.exit());
 app.use(express.static(frontendDir));
 
 // Stream video from external URLs using HTTPS
-const videoDir = path.join(__dirname, "videos");
-
-// Ensure `videos/` directory exists
-if (!fs.existsSync(videoDir)) {
-    fs.mkdirSync(videoDir);
-}
-
-// Function to download video with retries
-async function downloadVideo(videoUrl, filePath, attempt = 1) {
-    try {
-        console.log(`Downloading (Attempt ${attempt}): ${videoUrl}`);
-
-        const response = await axios({
-            url: videoUrl,
-            method: "GET",
-            responseType: "stream",
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-                "Referer": "https://catbox.moe/", // Some sites require a referer
-            },
-            timeout: 30000, // 30 seconds timeout
-        });
-
-        const fileStream = fs.createWriteStream(filePath);
-        response.data.pipe(fileStream);
-
-        return new Promise((resolve, reject) => {
-            fileStream.on("finish", () => {
-                console.log(`Download complete: ${filePath}`);
-                resolve();
-            });
-
-            fileStream.on("error", reject);
-        });
-
-    } catch (error) {
-        console.error(`Error downloading video (Attempt ${attempt}):`, error.message);
-
-        if (attempt < 3) {
-            console.log("Retrying...");
-            return downloadVideo(videoUrl, filePath, attempt + 1);
-        }
-
-        throw new Error("Failed to download video after 3 attempts.");
-    }
-}
-
 app.get("/stream", async (req, res) => {
     const videoUrl = req.query.video_url;
-    
+
     if (!videoUrl) {
         return res.status(400).send("Video URL is required.");
     }
 
-    // Generate a random hex filename
-    const randomFilename = crypto.randomBytes(6).toString("hex") + ".mp4";
-    const filePath = path.join(videoDir, randomFilename);
-
     try {
-        await downloadVideo(videoUrl, filePath);
-
-        // Force inline streaming on iOS
-        res.writeHead(200, {
-            "Content-Type": "video/mp4",
-            "Content-Disposition": "inline",  // Force inline playback
-            "Accept-Ranges": "bytes",         // Allow seeking
-            "Cache-Control": "no-store"       // Prevent caching issues
+        const response = await axios({
+            method: "get",
+            url: videoUrl,
+            responseType: "stream",
         });
 
-        fs.createReadStream(filePath).pipe(res);
+        res.writeHead(200, {
+            "Content-Type": "video/mp4",
+            "Content-Length": response.headers["content-length"],
+        });
+
+        response.data.pipe(res);
     } catch (error) {
-        res.status(500).send("Error downloading video.");
+        console.error("Error fetching video:", error.message);
+        res.status(error.response?.status || 500).send("Failed to fetch video.");
     }
 });
+
+app.listen(3000, () => console.log("Server running on port 3000"));
 
 // API endpoint to get the current movie and up-next data
 app.get("/api/get-current", (req, res) => {
@@ -194,7 +145,7 @@ app.post("/api/save-progress", (req, res) => {
 });
 
 // Telegram bot integration
-const bot = new TelegramBot("7860267122:AAHYE8PmWsisJ11UumQmSmmLh33nP5PuvU0", { polling: true });
+const bot = new TelegramBot("7860267122:AAEa-H806JRmHIGDkCWMotr6_y6fV4MxNwI", { polling: true });
 
 bot.onText(/\/play (.+) (.+)/, (msg, match) => {
     const name = match[1];
@@ -235,7 +186,7 @@ bot.on("polling_error", (error) => {
 });
 
 // Start the server
-const PORT = 7860;
+const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`Frontend available at http://localhost:${PORT}/index.html`);
