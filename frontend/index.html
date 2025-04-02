@@ -41,6 +41,24 @@
             object-fit: cover;
         }
 
+        .play-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
         .label {
             width: 80px;
             height: 40px;
@@ -75,6 +93,7 @@
             <video id="video-player" controls preload="metadata"
                    controlsList="nodownload noplaybackrate nofullscreen noremoteplayback" 
                    disablepictureinpicture></video>
+            <button id="play-button" class="play-button">▶</button>
         </div>
         <div class="label">R<br>TV</div>
         <div class="text-section">
@@ -89,6 +108,7 @@
 
     <script>
         const videoPlayer = document.getElementById("video-player");
+        const playButton = document.getElementById("play-button");
         const showingNowText = document.getElementById("showing-now");
         const upNextText = document.getElementById("up-next");
 
@@ -117,10 +137,11 @@
             if (videoData.video_url) {
                 const streamUrl = `/stream?video_url=${encodeURIComponent(videoData.video_url)}`;
                 videoPlayer.src = `${streamUrl}#t=${currentTime}`;
-                videoPlayer.play().catch(err => console.error("Error playing video:", err));
+                playButton.style.display = "block"; // Show play button
             } else {
                 console.error("No video URL provided.");
-                videoPlayer.src = ""; // Reset the video source
+                videoPlayer.src = "";
+                playButton.style.display = "none";
             }
         }
 
@@ -158,6 +179,18 @@
                 console.error("Error playing up-next video:", error);
             }
             isSwitching = false;
+        });
+
+        playButton.addEventListener("click", () => {
+            videoPlayer.play();
+        });
+
+        videoPlayer.addEventListener("play", () => {
+            playButton.style.display = "none"; // Hide button when playing
+        });
+
+        videoPlayer.addEventListener("pause", () => {
+            playButton.style.display = "block"; // Show button when paused
         });
 
         fetchMovieData();
