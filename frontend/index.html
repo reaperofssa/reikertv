@@ -632,85 +632,98 @@
         }
 
         function toggleFullScreen() {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                enterFullScreen();
-            } else {
-                exitFullScreen();
-            }
-        }
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        enterFullScreen();
+    } else {
+        exitFullScreen();
+    }
+}
 
-        function enterFullScreen() {
-            if (videoContainer.requestFullscreen) {
-                videoContainer.requestFullscreen();
-            } else if (videoContainer.webkitRequestFullscreen) {
-                videoContainer.webkitRequestFullscreen();
-            } else if (videoContainer.msRequestFullscreen) {
-                videoContainer.msRequestFullscreen();
-            } else if (videoContainer.webkitEnterFullscreen) {
-                videoContainer.webkitEnterFullscreen();
-            }
-        }
+function enterFullScreen() {
+    if (videoPlayer.requestFullscreen) {
+        videoPlayer.requestFullscreen();
+    } else if (videoPlayer.webkitRequestFullscreen) {
+        videoPlayer.webkitRequestFullscreen();
+    } else if (videoPlayer.msRequestFullscreen) {
+        videoPlayer.msRequestFullscreen();
+    } else if (videoPlayer.webkitEnterFullscreen) { 
+        // iOS-specific method for <video> elements
+        videoPlayer.webkitEnterFullscreen();
+    }
+}
 
-        function exitFullScreen() {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();
-            }
-        }
+function exitFullScreen() {
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+    }
+}
 
-        function handleWindowResize() {
-            if (window.innerWidth > window.innerHeight) {
-                document.body.style.backgroundColor = "black";
-            } else {
-                document.body.style.backgroundColor = "var(--secondary)";
-            }
-        }
+// Ensure iOS-specific fullscreen behavior
+document.addEventListener("fullscreenchange", handleFullScreenChange);
+document.addEventListener("webkitfullscreenchange", handleFullScreenChange);
 
-        function handleBeforeUnload() {
-            // Clean up resources before page unload
-            stopProgressTracking();
-            if (dataRefreshTimer) clearInterval(dataRefreshTimer);
+function handleFullScreenChange() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        console.log("Exited fullscreen");
+    } else {
+        console.log("Entered fullscreen");
+    }
+}
+
+function handleWindowResize() {
+    if (window.innerWidth > window.innerHeight) {
+        document.body.style.backgroundColor = "black";
+    } else {
+        document.body.style.backgroundColor = "var(--secondary)";
+    }
+}
+
+function handleBeforeUnload() {
+    // Clean up resources before page unload
+    stopProgressTracking();
+    if (dataRefreshTimer) clearInterval(dataRefreshTimer);
+    if (userActivityTimeout) clearTimeout(userActivityTimeout);
+}
+
+function handleOnlineStatus() {
+    showNotification("Connection restored", "success");
+    fetchMovieData();
+}
+
+function handleOfflineStatus() {
+    showNotification("Connection lost - attempting to reconnect...", "error");
+}
+
+function showNotification(message, type = "info") {
+    notificationElement.textContent = message;
+    notificationElement.className = `notification ${type}`;
+    notificationElement.classList.add("show");
+    
+    setTimeout(() => {
+        notificationElement.classList.remove("show");
+    }, 5000);
+}
+
+function trackUserActivity() {
+    // Reset activity timer on any user interaction
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => {
+        document.addEventListener(event, () => {
             if (userActivityTimeout) clearTimeout(userActivityTimeout);
-        }
+            userActivityTimeout = setTimeout(() => {
+                console.log("User inactive - pausing video");
+                videoPlayer.pause();
+            }, 300000); // 5 minutes inactivity timeout
+        }, { passive: true });
+    });
+}
 
-        function handleOnlineStatus() {
-            showNotification("Connection restored", "success");
-            fetchMovieData();
-        }
-
-        function handleOfflineStatus() {
-            showNotification("Connection lost - attempting to reconnect...", "error");
-        }
-
-        function showNotification(message, type = "info") {
-            notificationElement.textContent = message;
-            notificationElement.className = `notification ${type}`;
-            notificationElement.classList.add("show");
-            
-            setTimeout(() => {
-                notificationElement.classList.remove("show");
-            }, 5000);
-        }
-
-        function trackUserActivity() {
-            // Reset activity timer on any user interaction
-            const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-            events.forEach(event => {
-                document.addEventListener(event, () => {
-                    if (userActivityTimeout) clearTimeout(userActivityTimeout);
-                    userActivityTimeout = setTimeout(() => {
-                        console.log("User inactive - pausing video");
-                        videoPlayer.pause();
-                    }, 300000); // 5 minutes inactivity timeout
-                }, { passive: true });
-            });
-        }
-
-        // Initial setup
-        handleWindowResize();
+// Initial setup
+handleWindowResize();
     </script>
 </body>
 </html>
