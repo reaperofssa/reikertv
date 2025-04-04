@@ -3,11 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Reiker Live</title>
+    <title>Reiker Live - Premium Streaming</title>
     <style>
         @font-face {
             font-family: 'Gagalin';
             src: url('./gagalin.otf') format('opentype');
+            font-display: swap;
+        }
+
+        :root {
+            --primary: #ffcc00;
+            --primary-dark: #ff9900;
+            --secondary: #0a1934;
+            --secondary-light: #1a2a44;
+            --text-light: #f8f9fa;
+            --text-dark: #212529;
+            --success: #28a745;
+            --error: #dc3545;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 8px 15px rgba(0, 0, 0, 0.2);
+            --radius: 12px;
+            --radius-sm: 6px;
         }
 
         * {
@@ -17,110 +34,274 @@
         }
 
         body {
-            font-family: 'Gagalin', Arial, sans-serif;
-            background-color: #0a1934;
-            color: white;
+            font-family: 'Gagalin', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--secondary);
+            color: var(--text-light);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
         }
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
+            margin: 20px;
             text-align: center;
-            transition: all 0.3s ease;
+            transition: var(--transition);
+            position: relative;
         }
 
-        /* Status Bar Above Video */
+        /* Status Bar */
         .status-bar {
-            background: linear-gradient(90deg, #ffcc00, #ff9900);
-            padding: 10px;
-            font-size: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 12px;
+            font-size: 18px;
             font-weight: bold;
-            color: black;
+            color: var(--text-dark);
             text-align: center;
-            border-radius: 5px;
-            margin-bottom: 10px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
 
+        .live-badge {
+            display: inline-block;
+            background-color: var(--error);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* Video Container */
         .video-container {
             position: relative;
             width: 100%;
             aspect-ratio: 16 / 9;
-            background-color: black;
+            background-color: #000;
             overflow: hidden;
-            border-radius: 10px;
-            transition: all 0.3s ease;
+            border-radius: var(--radius);
+            transition: var(--transition);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
 
         .video-container video {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            background: black;
+            background: #000;
         }
 
+        /* Play Button */
         .play-button {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 204, 0, 0.9);
             border: none;
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
-            text-align: center;
+            width: 70px;
+            height: 70px;
+            font-size: 28px;
+            color: var(--text-dark);
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 10;
         }
 
+        .play-button:hover {
+            background: rgba(255, 230, 0, 0.95);
+            transform: translate(-50%, -50%) scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Controls */
         .controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
-            transition: all 0.3s ease;
+            padding: 15px 10px;
+            margin-top: 10px;
+            transition: var(--transition);
         }
 
-        .full-screen-button {
-            padding: 10px 20px;
-            background-color: #ffcc00;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            border-radius: 5px;
+        .brand-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .label {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
-            background: black;
-            padding: 5px 10px;
-            border-radius: 5px;
+            background: linear-gradient(135deg, var(--secondary-light), #000);
+            padding: 8px 15px;
+            border-radius: var(--radius-sm);
+            color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .logo {
+            width: 30px;
+            height: 30px;
+        }
+
+        .full-screen-button {
+            padding: 10px 25px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: var(--radius-sm);
+            color: var(--text-dark);
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .full-screen-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Info Sections */
+        .info-sections {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin: 15px 0;
         }
 
         .text-section {
-            background-color: white;
-            color: black;
-            margin: 10px 20px;
-            padding: 10px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 245, 245, 0.98));
+            color: var(--text-dark);
+            padding: 18px;
             text-align: left;
-            font-size: 14px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
+            font-size: 15px;
+            border-radius: var(--radius);
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .text-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary), var(--primary-dark));
         }
 
         .text-section-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .text-section-title::before {
+            content: '•';
+            color: var(--primary-dark);
+            font-size: 24px;
+        }
+
+        /* Loading State */
+        .loading {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--secondary-light);
+            color: white;
+            padding: 15px 20px;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-hover);
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--error);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            border-radius: 0 0 var(--radius) var(--radius);
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            transition: width 0.3s ease;
         }
 
         /* LANDSCAPE MODE */
@@ -140,11 +321,12 @@
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
+                margin: 0;
             }
 
             .status-bar,
             .controls,
-            .text-section {
+            .info-sections {
                 display: none;
             }
 
@@ -154,111 +336,381 @@
                 border-radius: 0;
             }
         }
+
+        /* Dark Mode Support */
+        @media (prefers-color-scheme: dark) {
+            .text-section {
+                background: linear-gradient(135deg, #1e1e1e, #2a2a2a);
+                color: var(--text-light);
+            }
+
+            .text-section-title {
+                color: var(--primary);
+            }
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .status-bar {
+                font-size: 16px;
+                padding: 10px;
+            }
+
+            .label {
+                font-size: 18px;
+                padding: 6px 12px;
+            }
+
+            .full-screen-button {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+
+            .text-section {
+                padding: 15px;
+                font-size: 14px;
+            }
+
+            .text-section-title {
+                font-size: 16px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="status-bar">LIVE: STREAMING NOW</div>
+        <div class="status-bar">
+            <span class="live-badge">LIVE</span>
+            <span>STREAMING NOW</span>
+        </div>
+        
         <div class="video-container" id="video-container">
-            <video id="video-player" preload="metadata" playsinline></video>
+            <video id="video-player" preload="auto" playsinline></video>
             <button id="play-button" class="play-button">▶</button>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
         </div>
+        
         <div class="controls">
-            <div class="label">R-TV</div>
-            <button id="full-screen-button" class="full-screen-button">Full Screen</button>
+            <div class="brand-label">
+                <svg class="logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="var(--primary)" d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm1.65-2.65L11.5 12.2V7h1v4.8l1.65 1.65-.5.5z"/>
+                </svg>
+                <div class="label">R-TV</div>
+            </div>
+            <button id="full-screen-button" class="full-screen-button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" fill="var(--text-dark)"/>
+                </svg>
+                Full Screen
+            </button>
         </div>
-        <div class="text-section">
-            <div class="text-section-title">Showing Now</div>
-            <div id="showing-now">Loading...</div>
-        </div>
-        <div class="text-section">
-            <div class="text-section-title">Up Next</div>
-            <div id="up-next">Loading...</div>
+        
+        <div class="info-sections">
+            <div class="text-section fade-in">
+                <div class="text-section-title">Showing Now</div>
+                <div id="showing-now" class="loading">Loading current program...</div>
+            </div>
+            
+            <div class="text-section fade-in">
+                <div class="text-section-title">Up Next</div>
+                <div id="up-next" class="loading">Loading upcoming programs...</div>
+            </div>
         </div>
     </div>
 
+    <div class="notification" id="notification"></div>
+
     <script>
+        // DOM Elements
         const videoPlayer = document.getElementById("video-player");
         const playButton = document.getElementById("play-button");
         const fullScreenButton = document.getElementById("full-screen-button");
+        const videoContainer = document.getElementById("video-container");
+        const showingNowElement = document.getElementById("showing-now");
+        const upNextElement = document.getElementById("up-next");
+        const notificationElement = document.getElementById("notification");
+        const progressBar = document.getElementById("progress-bar");
+        
+        // Configuration
         const apiUrl = "/api/get-current";
+        const reconnectDelay = 5000; // 5 seconds
+        const progressUpdateInterval = 1000; // 1 second
+        const dataRefreshInterval = 300000; // 5 minutes
         let isSwitching = false;
+        let currentStreamUrl = "";
+        let progressInterval;
+        let dataRefreshTimer;
+        let userActivityTimeout;
+        const userSessionId = 'user-' + Math.random().toString(36).substr(2, 9);
 
+        // Initialize video player attributes
         videoPlayer.setAttribute("webkit-playsinline", "true");
         videoPlayer.setAttribute("playsinline", "true");
+        videoPlayer.setAttribute("x-webkit-airplay", "allow");
+        videoPlayer.setAttribute("x5-video-player-type", "h5");
+
+        // Initialize the application
+        initApplication();
+
+        function initApplication() {
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Initial data fetch
+            fetchMovieData();
+            
+            // Start periodic data refresh
+            dataRefreshTimer = setInterval(fetchMovieData, dataRefreshInterval);
+            
+            // Track user activity
+            trackUserActivity();
+        }
+
+        function setupEventListeners() {
+            // Play button click
+            playButton.addEventListener("click", () => {
+                videoPlayer.play().catch(error => {
+                    showNotification("Please interact to play video", "error");
+                });
+            });
+
+            // Video player events
+            videoPlayer.addEventListener("play", handlePlay);
+            videoPlayer.addEventListener("pause", handlePause);
+            videoPlayer.addEventListener("ended", handleEnded);
+            videoPlayer.addEventListener("error", handleVideoError);
+            videoPlayer.addEventListener("waiting", handleWaiting);
+            videoPlayer.addEventListener("playing", handlePlaying);
+            videoPlayer.addEventListener("timeupdate", handleTimeUpdate);
+
+            // Fullscreen button
+            fullScreenButton.addEventListener("click", toggleFullScreen);
+
+            // Window events
+            window.addEventListener("resize", handleWindowResize);
+            window.addEventListener("beforeunload", handleBeforeUnload);
+            window.addEventListener("online", handleOnlineStatus);
+            window.addEventListener("offline", handleOfflineStatus);
+        }
 
         async function fetchMovieData() {
             try {
-                const response = await fetch(apiUrl);
+                // Show loading states
+                showingNowElement.classList.add("loading");
+                upNextElement.classList.add("loading");
+                
+                // Add cache busting parameter
+                const timestamp = new Date().getTime();
+                const response = await fetch(`${apiUrl}?t=${timestamp}&session=${userSessionId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
-
-                document.getElementById("showing-now").innerText = data.showing_now.name || "No Movie Playing";
-                document.getElementById("up-next").innerText = data.up_next.name || "No Movie Scheduled";
-
-                if (!isSwitching) {
+                
+                // Update UI
+                showingNowElement.textContent = data.showing_now?.name || "No program currently playing";
+                upNextElement.textContent = data.up_next?.name || "No upcoming programs scheduled";
+                
+                // Remove loading states
+                showingNowElement.classList.remove("loading");
+                upNextElement.classList.remove("loading");
+                
+                // Setup video if needed
+                if (!isSwitching && data.showing_now?.video_url) {
                     setupVideo(data.showing_now, data.current_time);
+                }
+                
+                // Show success notification if this was a manual refresh
+                if (dataRefreshTimer) {
+                    clearInterval(dataRefreshTimer);
+                    dataRefreshTimer = setInterval(fetchMovieData, dataRefreshInterval);
                 }
             } catch (error) {
                 console.error("Error fetching movie data:", error);
+                showingNowElement.textContent = "Error loading current program";
+                upNextElement.textContent = "Error loading upcoming programs";
+                showingNowElement.classList.remove("loading");
+                upNextElement.classList.remove("loading");
+                
+                showNotification("Connection error - retrying...", "error");
+                setTimeout(fetchMovieData, reconnectDelay);
             }
         }
 
         function setupVideo(videoData, currentTime) {
-            if (videoData.video_url) {
-                const streamUrl = `/stream?video_url=${encodeURIComponent(videoData.video_url)}`;
-                videoPlayer.src = `${streamUrl}#t=${currentTime}`;
-                playButton.style.display = "block";
-            } else {
+            if (!videoData?.video_url) {
                 console.error("No video URL provided.");
                 videoPlayer.src = "";
-                playButton.style.display = "none";
+                playButton.style.display = "block";
+                return;
+            }
+
+            const streamUrl = `/stream?video_url=${encodeURIComponent(videoData.video_url)}&session=${userSessionId}`;
+            
+            // Only change source if it's different from current
+            if (streamUrl !== currentStreamUrl) {
+                currentStreamUrl = streamUrl;
+                
+                // Show loading state
+                videoContainer.classList.add("loading");
+                
+                // Set video source
+                videoPlayer.src = `${streamUrl}#t=${currentTime || 0}`;
+                
+                // Attempt to play (will require user interaction on most browsers)
+                videoPlayer.play().catch(error => {
+                    console.log("Autoplay prevented:", error);
+                    playButton.style.display = "block";
+                    videoContainer.classList.remove("loading");
+                });
             }
         }
 
-        playButton.addEventListener("click", () => {
-            videoPlayer.play();
-        });
-
-        videoPlayer.addEventListener("play", () => {
+        function handlePlay() {
             playButton.style.display = "none";
-        });
+            videoContainer.classList.remove("loading");
+            startProgressTracking();
+        }
 
-        videoPlayer.addEventListener("pause", () => {
+        function handlePause() {
             playButton.style.display = "block";
-        });
+            stopProgressTracking();
+        }
 
-        fullScreenButton.addEventListener("click", () => {
-            if (document.fullscreenElement || document.webkitFullscreenElement) {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                }
-            } else {
-                if (videoPlayer.requestFullscreen) {
-                    videoPlayer.requestFullscreen();
-                } else if (videoPlayer.webkitRequestFullscreen) {
-                    videoPlayer.webkitRequestFullscreen();
-                } else if (videoPlayer.msRequestFullscreen) {
-                    videoPlayer.msRequestFullscreen();
-                } else if (videoPlayer.webkitEnterFullscreen) {
-                    videoPlayer.webkitEnterFullscreen();
-                } else {
-                    alert("Fullscreen is not supported on this device.");
-                }
+        function handleEnded() {
+            playButton.style.display = "block";
+            stopProgressTracking();
+            showNotification("Program ended - loading next...", "success");
+            setTimeout(fetchMovieData, 2000);
+        }
+
+        function handleVideoError() {
+            console.error("Video error:", videoPlayer.error);
+            showNotification("Stream error - retrying...", "error");
+            stopProgressTracking();
+            setTimeout(fetchMovieData, reconnectDelay);
+        }
+
+        function handleWaiting() {
+            videoContainer.classList.add("loading");
+        }
+
+        function handlePlaying() {
+            videoContainer.classList.remove("loading");
+        }
+
+        function handleTimeUpdate() {
+            if (videoPlayer.duration) {
+                const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+                progressBar.style.width = `${progress}%`;
             }
-        });
+        }
 
-        window.addEventListener("resize", () => {
+        function startProgressTracking() {
+            stopProgressTracking();
+            progressInterval = setInterval(handleTimeUpdate, progressUpdateInterval);
+        }
+
+        function stopProgressTracking() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                enterFullScreen();
+            } else {
+                exitFullScreen();
+            }
+        }
+
+        function enterFullScreen() {
+            if (videoContainer.requestFullscreen) {
+                videoContainer.requestFullscreen();
+            } else if (videoContainer.webkitRequestFullscreen) {
+                videoContainer.webkitRequestFullscreen();
+            } else if (videoContainer.msRequestFullscreen) {
+                videoContainer.msRequestFullscreen();
+            } else if (videoContainer.webkitEnterFullscreen) {
+                videoContainer.webkitEnterFullscreen();
+            }
+        }
+
+        function exitFullScreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+
+        function handleWindowResize() {
             if (window.innerWidth > window.innerHeight) {
                 document.body.style.backgroundColor = "black";
             } else {
-                document.body.style.backgroundColor = "#0a1934";
+                document.body.style.backgroundColor = "var(--secondary)";
             }
-        });
+        }
 
-        fetchMovieData();
-        setInterval(fetchMovieData, 350000);
+        function handleBeforeUnload() {
+            // Clean up resources before page unload
+            stopProgressTracking();
+            if (dataRefreshTimer) clearInterval(dataRefreshTimer);
+            if (userActivityTimeout) clearTimeout(userActivityTimeout);
+        }
+
+        function handleOnlineStatus() {
+            showNotification("Connection restored", "success");
+            fetchMovieData();
+        }
+
+        function handleOfflineStatus() {
+            showNotification("Connection lost - attempting to reconnect...", "error");
+        }
+
+        function showNotification(message, type = "info") {
+            notificationElement.textContent = message;
+            notificationElement.className = `notification ${type}`;
+            notificationElement.classList.add("show");
+            
+            setTimeout(() => {
+                notificationElement.classList.remove("show");
+            }, 5000);
+        }
+
+        function trackUserActivity() {
+            // Reset activity timer on any user interaction
+            const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+            events.forEach(event => {
+                document.addEventListener(event, () => {
+                    if (userActivityTimeout) clearTimeout(userActivityTimeout);
+                    userActivityTimeout = setTimeout(() => {
+                        console.log("User inactive - pausing video");
+                        videoPlayer.pause();
+                    }, 300000); // 5 minutes inactivity timeout
+                }, { passive: true });
+            });
+        }
+
+        // Initial setup
+        handleWindowResize();
     </script>
 </body>
 </html>
